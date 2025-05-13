@@ -1,0 +1,74 @@
+import React, { useEffect, useState } from "react";
+import { getTickets, createTicket, updateTicket, deleteTicket } from "./api";
+
+function App() {
+  const [tickets, setTickets] = useState([]);
+  const [titulo, setTitulo] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [editando, setEditando] = useState(null); // Para saber si estamos editando un ticket
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  const fetchTickets = async () => {
+    const data = await getTickets();
+    setTickets(data);
+  };
+
+  const handleCreateOrUpdate = async () => {
+    if (editando) {
+      await updateTicket(editando, titulo, descripcion, "pendiente");
+      setEditando(null);
+    } else {
+      await createTicket(titulo, descripcion);
+    }
+    setTitulo("");
+    setDescripcion("");
+    fetchTickets();
+  };
+
+  const handleDelete = async (id) => {
+    await deleteTicket(id);
+    fetchTickets();
+  };
+
+  const handleEdit = (ticket) => {
+    setTitulo(ticket.titulo);
+    setDescripcion(ticket.descripcion);
+    setEditando(ticket.id);
+  };
+
+  return (
+    <div>
+      <h1>Lista de Tickets</h1>
+      <input
+        type="text"
+        placeholder="Título"
+        value={titulo}
+        onChange={(e) => setTitulo(e.target.value)}
+      />
+      <input
+        type="text"
+        placeholder="Descripción"
+        value={descripcion}
+        onChange={(e) => setDescripcion(e.target.value)}
+      />
+      <button onClick={handleCreateOrUpdate}>
+        {editando ? "Actualizar Ticket" : "Crear Ticket"}
+      </button>
+
+      <ul>
+        {tickets.map((ticket) => (
+          <li key={ticket.id}>
+            {ticket.titulo} - {ticket.estado}
+            <button onClick={() => handleEdit(ticket)}>✏️ Editar</button>
+            <button onClick={() => handleDelete(ticket.id)}>❌ Eliminar</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default App;

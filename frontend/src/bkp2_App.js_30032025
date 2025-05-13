@@ -1,0 +1,139 @@
+import React, { useEffect, useState } from "react";
+import {
+  Container,
+  Typography,
+  TextField,
+  Button,
+  Select,
+  MenuItem,
+  Card,
+  CardContent,
+  CardActions,
+  Grid,
+} from "@mui/material";
+import { getTickets, createTicket, updateTicket, deleteTicket } from "./api";
+
+function App() {
+  const [tickets, setTickets] = useState([]);
+  const [titulo, setTitulo] = useState("");
+  const [descripcion, setDescripcion] = useState("");
+  const [estado, setEstado] = useState("pendiente");
+  const [editando, setEditando] = useState(null);
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  const fetchTickets = async () => {
+    const data = await getTickets();
+    setTickets(data);
+  };
+
+  const handleCreateOrUpdate = async () => {
+    if (editando) {
+      await updateTicket(editando, titulo, descripcion, estado);
+      setEditando(null);
+    } else {
+      await createTicket(titulo, descripcion);
+    }
+    setTitulo("");
+    setDescripcion("");
+    setEstado("pendiente");
+    fetchTickets();
+  };
+
+  const handleEdit = (ticket) => {
+    setTitulo(ticket.titulo);
+    setDescripcion(ticket.descripcion);
+    setEstado(ticket.estado);
+    setEditando(ticket.id);
+  };
+
+  const handleDelete = async (id) => {
+    await deleteTicket(id);
+    fetchTickets();
+  };
+
+  return (
+    <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        🎟 Sistema de Tickets
+      </Typography>
+
+      <Card sx={{ mb: 4, p: 2 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            {editando ? "Editar Ticket" : "Crear Nuevo Ticket"}
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Título"
+                value={titulo}
+                onChange={(e) => setTitulo(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Descripción"
+                value={descripcion}
+                onChange={(e) => setDescripcion(e.target.value)}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Select
+                fullWidth
+                value={estado}
+                onChange={(e) => setEstado(e.target.value)}
+              >
+                <MenuItem value="pendiente">Pendiente</MenuItem>
+                <MenuItem value="en proceso">En proceso</MenuItem>
+                <MenuItem value="completado">Completado</MenuItem>
+              </Select>
+            </Grid>
+          </Grid>
+        </CardContent>
+        <CardActions>
+          <Button
+            variant="contained"
+            color={editando ? "warning" : "primary"}
+            onClick={handleCreateOrUpdate}
+          >
+            {editando ? "Actualizar" : "Crear"}
+          </Button>
+        </CardActions>
+      </Card>
+
+      <Grid container spacing={2}>
+        {tickets.map((ticket) => (
+          <Grid item xs={12} sm={6} key={ticket.id}>
+            <Card>
+              <CardContent>
+                <Typography variant="h6">{ticket.titulo}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Estado: {ticket.estado}
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <Button size="small" onClick={() => handleEdit(ticket)}>
+                  ✏️ Editar
+                </Button>
+                <Button
+                  size="small"
+                  color="error"
+                  onClick={() => handleDelete(ticket.id)}
+                >
+                  ❌ Eliminar
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Container>
+  );
+}
+
+export default App;

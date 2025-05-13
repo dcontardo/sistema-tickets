@@ -1,0 +1,29 @@
+# Entorno virtual de Python
+venv/
+
+# Django
+*.pyc
+__pycache__/
+*.sqlite3
+*.log
+*.pot
+*.py[cod]
+staticfiles/
+media/
+
+# Node / React
+frontend/node_modules/
+frontend/build/
+
+# Archivos de entorno
+.env
+*.env
+
+# SonarQube
+.scannerwork/
+sonar-project.properties
+
+# Sistema
+.DS_Store
+*.tar.gz
+*.bak
