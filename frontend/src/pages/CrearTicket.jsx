@@ -1,7 +1,17 @@
 // frontend/src/pages/CrearTicket.jsx
 
 import React, { useState, useEffect } from "react";
-import { Box, Button, TextField, Typography, Alert } from "@mui/material";
+import {
+  Box,
+  Button,
+  TextField,
+  Typography,
+  Alert,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { createTicket } from "../api";
 import { useAuth } from "../context/AuthContext";
@@ -9,6 +19,7 @@ import { useAuth } from "../context/AuthContext";
 export default function CrearTicket() {
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
+  const [categoria, setCategoria] = useState("");
   const [error, setError] = useState("");
   const [exito, setExito] = useState("");
   const navigate = useNavigate();
@@ -25,18 +36,19 @@ export default function CrearTicket() {
     setError("");
     setExito("");
 
-    if (!titulo || !descripcion) {
-      setError("Título y descripción son obligatorios.");
+    if (!titulo || !descripcion || !categoria) {
+      setError("Todos los campos son obligatorios.");
       return;
     }
 
     try {
-      const nuevoTicket = await createTicket(titulo, descripcion);
+      const nuevoTicket = await createTicket(titulo, descripcion, categoria);
       setExito(`Ticket #${nuevoTicket.id} creado correctamente.`);
       setTitulo("");
       setDescripcion("");
+      setCategoria("");
 
-      // Opcional: redirigir luego de 2.5 segundos
+      // Redirige luego de mostrar el mensaje
       setTimeout(() => {
         navigate("/tickets");
       }, 2500);
@@ -64,6 +76,7 @@ export default function CrearTicket() {
           sx={{ mb: 2 }}
           required
         />
+
         <TextField
           label="Descripción"
           fullWidth
@@ -74,6 +87,20 @@ export default function CrearTicket() {
           sx={{ mb: 2 }}
           required
         />
+
+        <FormControl fullWidth sx={{ mb: 2 }} required>
+          <InputLabel>Categoría</InputLabel>
+          <Select
+            value={categoria}
+            onChange={(e) => setCategoria(e.target.value)}
+            label="Categoría"
+          >
+            <MenuItem value="admisión">Admisión</MenuItem>
+            <MenuItem value="registro académico">Registro Académico</MenuItem>
+            <MenuItem value="financiamiento">Financiamiento</MenuItem>
+          </Select>
+        </FormControl>
+
         <Button variant="contained" type="submit">
           Crear Ticket
         </Button>

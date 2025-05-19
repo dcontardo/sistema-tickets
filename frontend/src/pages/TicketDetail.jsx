@@ -38,9 +38,9 @@ export default function TicketDetail() {
   const [comentarios, setComentarios] = useState([]);
   const [nuevoComentario, setNuevoComentario] = useState("");
   const [openConfirm, setOpenConfirm] = useState(false);
-  const [bloqueado, setBloqueado] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [alerta, setAlerta] = useState(false);
+  const [bloqueado, setBloqueado] = useState(false);
 
   useEffect(() => {
     cargarDatos();
@@ -56,17 +56,15 @@ export default function TicketDetail() {
     const coments = await getComentarios(id);
     setComentarios(coments);
 
-    // Bloquear si el usuario es estudiante y última acción fue suya o ticket está resuelto
     const ultimo = coments.at(-1);
     setBloqueado(
       usuario.tipo === "estudiante" &&
-        (data.estado === "Resuelto" || ultimo?.usuario === usuario.id)
+        (data.estado === "Resuelto" || !ultimo || ultimo.usuario === usuario.id)
     );
   };
 
   const handleActualizarEstado = async () => {
     try {
-      // Incluimos título y descripción actuales para evitar null
       await updateTicket(id, ticket.titulo, ticket.descripcion, estado, prioridad);
       await postComentario(id, {
         contenido: `Se cambia estado de ticket a ${estado}.`,
@@ -104,45 +102,53 @@ export default function TicketDetail() {
         ← VOLVER
       </Button>
 
-      <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
+      <Typography variant="h5" sx={{ mb: 2, textAlign: "center" }}>
         {ticket.titulo}
       </Typography>
-      <Typography sx={{ mb: 3, textAlign: 'center' }}>{ticket.descripcion}</Typography>
+      <Typography sx={{ mb: 3, textAlign: "center" }}>{ticket.descripcion}</Typography>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
-        <strong>Creado por:</strong> {ticket.usuario_username} / {ticket.usuario_nombre}{' '}
+      <Typography
+        variant="body2"
+        color="text.secondary"
+        sx={{ mb: 3, textAlign: "center" }}
+      >
+        <strong>Creado por:</strong> {ticket.usuario_username} / {ticket.usuario_nombre}{" "}
         {ticket.usuario_apellido} / {ticket.usuario_email}
         <br />
-        <strong>Fecha de creación:</strong>{' '}
-        {new Date(ticket.creado_en).toLocaleString('es-CL')}
+        <strong>Fecha de creación:</strong>{" "}
+        {new Date(ticket.creado_en).toLocaleString("es-CL")}
       </Typography>
 
       <Box sx={{ mb: 4 }}>
-        <Typography sx={{ mb: 1 }}><strong>Estado</strong></Typography>
+        <Typography sx={{ mb: 1 }}>
+          <strong>Estado</strong>
+        </Typography>
         <Select
           fullWidth
           value={estado}
           onChange={(e) => setEstado(e.target.value)}
-          disabled={usuario.tipo === 'estudiante'}
+          disabled={usuario.tipo === "estudiante"}
         >
           <MenuItem value="Abierto">Abierto</MenuItem>
           <MenuItem value="En Revisión">En Revisión</MenuItem>
           <MenuItem value="Resuelto">Resuelto</MenuItem>
         </Select>
 
-        <Typography sx={{ mt: 3, mb: 1 }}><strong>Prioridad</strong></Typography>
+        <Typography sx={{ mt: 3, mb: 1 }}>
+          <strong>Prioridad</strong>
+        </Typography>
         <Select
           fullWidth
           value={prioridad}
           onChange={(e) => setPrioridad(e.target.value)}
-          disabled={usuario.tipo === 'estudiante'}
+          disabled={usuario.tipo === "estudiante"}
         >
           <MenuItem value="Alta">Alta</MenuItem>
           <MenuItem value="Media">Media</MenuItem>
           <MenuItem value="Baja">Baja</MenuItem>
         </Select>
 
-        {usuario.tipo !== 'estudiante' && (
+        {usuario.tipo !== "estudiante" && (
           <Button
             variant="contained"
             fullWidth
@@ -154,10 +160,12 @@ export default function TicketDetail() {
         )}
       </Box>
 
-      <Typography variant="h6" sx={{ mb: 1 }}>Conversación</Typography>
+      <Typography variant="h6" sx={{ mb: 1 }}>
+        Conversación
+      </Typography>
       <Paper
         variant="outlined"
-        sx={{ height: '30vh', overflowY: 'auto', p: 2, mb: 2 }}
+        sx={{ height: "30vh", overflowY: "auto", p: 2, mb: 2 }}
       >
         {comentarios.length === 0 ? (
           <Typography>Aún no hay comentarios.</Typography>
@@ -165,12 +173,12 @@ export default function TicketDetail() {
           comentarios.map((comentario) => (
             <Box
               key={comentario.id}
-              sx={{ mb: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
+              sx={{ mb: 2, p: 1, bgcolor: "#f5f5f5", borderRadius: 1 }}
             >
               <Typography>{comentario.contenido}</Typography>
               <Typography variant="caption" color="text.secondary">
-                {comentario.usuario_username} —{' '}
-                {new Date(comentario.creado_en).toLocaleString('es-CL')}
+                {comentario.usuario_username} — {" "}
+                {new Date(comentario.creado_en).toLocaleString("es-CL")}
               </Typography>
             </Box>
           ))
@@ -216,9 +224,9 @@ export default function TicketDetail() {
         open={alerta}
         autoHideDuration={3500}
         onClose={() => setAlerta(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert severity="success" sx={{ width: '100%' }}>
+        <Alert severity="success" sx={{ width: "100%" }}>
           {mensaje}
         </Alert>
       </Snackbar>

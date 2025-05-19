@@ -1,3 +1,5 @@
+# backend/api/models.py
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
@@ -44,6 +46,16 @@ class Ticket(models.Model):
 
     titulo = models.CharField(max_length=100)
     descripcion = models.TextField()
+    
+    # Nuevos campos
+    categoria = models.CharField(max_length=20, choices=[
+        ('academico', 'Académico'),
+        ('admision', 'Admisión'),
+        ('financiero', 'Financiero')
+    ], default='academico')
+
+    asignado_a = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='asignados')
+
     prioridad = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='Media')
     estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='Abierto')
     creado_en = models.DateTimeField(auto_now_add=True)

@@ -18,6 +18,8 @@ from .serializers import (
     EscuelaSerializer,
     CarreraSerializer,
 )
+from rest_framework.generics import ListAPIView
+import random
 
 # -------------------- Tickets --------------------
 class TicketViewSet(viewsets.ModelViewSet):
@@ -30,17 +32,25 @@ class TicketViewSet(viewsets.ModelViewSet):
         if user.tipo == "admin":
             return qs
         if user.tipo == "funcionario":
-            return qs.filter(usuario__area=user.area)
+            return qs.filter(asignado_a=user)
         return qs.filter(usuario=user)
 
     def perform_create(self, serializer):
-        serializer.save(usuario=self.request.user)
+        categoria = self.request.data.get("categoria")
+        funcionario = None
+
+        if categoria:
+            funcionarios = User.objects.filter(tipo="funcionario", area__nombre__iexact=categoria)
+            if funcionarios.exists():
+                funcionario = random.choice(funcionarios)
+
+        serializer.save(usuario=self.request.user, asignado_a=funcionario)
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         if not serializer.is_valid():
-            print("⚠️ Errores en PATCH:", serializer.errors)
+            print("\u26a0\ufe0f Errores en PATCH:", serializer.errors)
             return Response(serializer.errors, status=400)
         self.perform_update(serializer)
         return Response(serializer.data)
@@ -191,8 +201,6 @@ def eliminar_usuario(request, user_id):
         return Response({"detail": "Usuario no encontrado"}, status=404)
 
 # -------------------- Catálogos --------------------
-from rest_framework.generics import ListAPIView
-
 class AreaListView(ListAPIView):
     queryset = Area.objects.all()
     serializer_class = AreaSerializer
