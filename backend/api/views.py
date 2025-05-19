@@ -1,3 +1,5 @@
+# backend/api/views.py
+
 from rest_framework import viewsets, generics, status
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
@@ -36,15 +38,10 @@ class TicketViewSet(viewsets.ModelViewSet):
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
-
-        # DEBUG: muestra lo que llega y los errores
-        print("📥 PATCH recibido:", request.data)
-
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         if not serializer.is_valid():
-            print("❌ Errores de validación:", serializer.errors)
+            print("⚠️ Errores en PATCH:", serializer.errors)
             return Response(serializer.errors, status=400)
-
         self.perform_update(serializer)
         return Response(serializer.data)
 
@@ -58,7 +55,15 @@ class ComentarioListCreateView(generics.ListCreateAPIView):
         return Comentario.objects.filter(ticket_id=ticket_id).order_by('creado_en')
 
     def perform_create(self, serializer):
-        serializer.save(ticket_id=self.kwargs['ticket_id'], usuario=self.request.user)
+        ticket_id = self.kwargs['ticket_id']
+        user = self.request.user
+
+        if user.tipo == "estudiante":
+            ultimo = Comentario.objects.filter(ticket_id=ticket_id).order_by('-creado_en').first()
+            if ultimo and ultimo.usuario == user:
+                raise serializers.ValidationError("Debes esperar una respuesta antes de volver a comentar.")
+
+        serializer.save(ticket_id=ticket_id, usuario=user)
 
 # -------------------- Registro --------------------
 class RegisterView(generics.CreateAPIView):

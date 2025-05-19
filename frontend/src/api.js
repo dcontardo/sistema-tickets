@@ -1,4 +1,5 @@
-// src/api.js
+// frontend/src/api.js
+
 const API_BASE = "http://192.168.200.46:8000/api";
 
 const getAuthHeaders = () => {
@@ -27,6 +28,16 @@ export const updateTicket = async (id, titulo, descripcion, estado, prioridad) =
   return await res.json();
 };
 
+export const updateTicketStatus = async (id, estado) => {
+  const res = await fetch(`${API_BASE}/tickets/${id}/`, {
+    method: "PATCH",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ estado }),
+  });
+  if (!res.ok) throw new Error("Error al actualizar estado del ticket");
+  return await res.json();
+};
+
 export const createTicket = async (titulo, descripcion) => {
   const res = await fetch(`${API_BASE}/tickets/`, {
     method: "POST",
@@ -34,6 +45,32 @@ export const createTicket = async (titulo, descripcion) => {
     body: JSON.stringify({ titulo, descripcion }),
   });
   if (!res.ok) throw new Error("Error al crear ticket");
+  return await res.json();
+};
+
+export const getTicketDetail = async (id) => {
+  const res = await fetch(`${API_BASE}/tickets/${id}/`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Error al obtener detalle del ticket");
+  return await res.json();
+};
+
+export const getComentarios = async (ticketId) => {
+  const res = await fetch(`${API_BASE}/tickets/${ticketId}/comentarios/`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Error al obtener comentarios");
+  return await res.json();
+};
+
+export const postComentario = async (ticketId, comentario) => {
+  const res = await fetch(`${API_BASE}/tickets/${ticketId}/comentarios/`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(comentario),
+  });
+  if (!res.ok) throw new Error("Error al enviar comentario");
   return await res.json();
 };
 

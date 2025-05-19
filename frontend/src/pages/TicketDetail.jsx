@@ -1,164 +1,227 @@
-// src/pages/TicketDetail.jsx
-import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
-import {
-  Box, Button, Typography, TextField, Select, MenuItem, InputLabel,
-  FormControl, Dialog, DialogActions, DialogContent, DialogContentText,
-  DialogTitle, Snackbar, Alert, Card, CardContent
-} from "@mui/material";
-import { useAuth } from "../context/AuthContext";
+// frontend/src/pages/TicketDetail.jsx
 
-const API_BASE = "http://192.168.200.46:8000/api";
+import React, { useEffect, useState } from "react";
+import {
+  Box,
+  Button,
+  Container,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Snackbar,
+  Alert,
+  Paper,
+} from "@mui/material";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  getTicketDetail,
+  updateTicket,
+  getComentarios,
+  postComentario,
+} from "../api";
+import { useAuth } from "../context/AuthContext";
 
 export default function TicketDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { usuario } = useAuth();
+  const navigate = useNavigate();
 
   const [ticket, setTicket] = useState(null);
+  const [estado, setEstado] = useState("");
+  const [prioridad, setPrioridad] = useState("");
   const [comentarios, setComentarios] = useState([]);
   const [nuevoComentario, setNuevoComentario] = useState("");
-  const [estado, setEstado] = useState("");
-  const [abrirConfirmacion, setAbrirConfirmacion] = useState(false);
-  const [mostrarAlerta, setMostrarAlerta] = useState(false);
-
-  const token = localStorage.getItem("token");
+  const [openConfirm, setOpenConfirm] = useState(false);
+  const [bloqueado, setBloqueado] = useState(false);
+  const [mensaje, setMensaje] = useState("");
+  const [alerta, setAlerta] = useState(false);
 
   useEffect(() => {
-    axios.get(`${API_BASE}/tickets/${id}/`, {
-      headers: { Authorization: `Token ${token}` }
-    }).then((res) => {
-      const t = res.data;
-      if (usuario.tipo === "estudiante" && t.usuario !== usuario.id) return navigate("/tickets");
-      if (usuario.tipo === "funcionario" && t.area_nombre !== usuario.area_nombre) return navigate("/tickets");
-      setTicket(t);
-      setEstado(t.estado);
-    }).catch(() => navigate("/tickets"));
+    cargarDatos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    axios.get(`${API_BASE}/tickets/${id}/comentarios/`, {
-      headers: { Authorization: `Token ${token}` }
-    }).then((res) => setComentarios(res.data));
-  }, [id, usuario, navigate, token]);
+  const cargarDatos = async () => {
+    const data = await getTicketDetail(id);
+    setTicket(data);
+    setEstado(data.estado);
+    setPrioridad(data.prioridad);
 
-  const manejarComentario = async () => {
-    if (!nuevoComentario.trim()) return;
+    const coments = await getComentarios(id);
+    setComentarios(coments);
 
+    // Bloquear si el usuario es estudiante y última acción fue suya o ticket está resuelto
+    const ultimo = coments.at(-1);
+    setBloqueado(
+      usuario.tipo === "estudiante" &&
+        (data.estado === "Resuelto" || ultimo?.usuario === usuario.id)
+    );
+  };
+
+  const handleActualizarEstado = async () => {
     try {
-      const res = await axios.post(
-        `${API_BASE}/tickets/${id}/comentarios/`,
-        { contenido: nuevoComentario },
-        { headers: { Authorization: `Token ${token}` } }
-      );
-      setComentarios((prev) => [...prev, res.data]);
+      // Incluimos título y descripción actuales para evitar null
+      await updateTicket(id, ticket.titulo, ticket.descripcion, estado, prioridad);
+      await postComentario(id, {
+        contenido: `Se cambia estado de ticket a ${estado}.`,
+      });
+      setOpenConfirm(false);
+      setMensaje("Estado actualizado correctamente.");
+      setAlerta(true);
+      cargarDatos();
+    } catch (error) {
+      console.error("Error al actualizar estado:", error);
+    }
+  };
+
+  const handleEnviarComentario = async () => {
+    if (!nuevoComentario.trim()) return;
+    try {
+      await postComentario(id, { contenido: nuevoComentario });
       setNuevoComentario("");
+      cargarDatos();
     } catch (error) {
       console.error("Error al comentar:", error);
     }
   };
 
-  const confirmarCambioEstado = () => {
-    axios.patch(`${API_BASE}/tickets/${id}/`, { estado }, {
-      headers: { Authorization: `Token ${token}` }
-    }).then((res) => {
-      setTicket(res.data);
-      setMostrarAlerta(true);
-      setAbrirConfirmacion(false);
-    }).catch((err) => {
-      console.error("Error al actualizar estado:", err);
-    });
-  };
-
-  if (!ticket) return <Typography sx={{ p: 2 }}>Cargando ticket…</Typography>;
-
-  const puedeCambiarEstado = usuario.tipo === "funcionario" || usuario.tipo === "admin";
+  if (!ticket) return null;
 
   return (
-    <Box p={2}>
-      <Button onClick={() => navigate(-1)} variant="outlined" sx={{ mb: 2 }}>
-        ← Volver
+    <Container maxWidth="sm" sx={{ mt: 8, mb: 4 }}>
+      <Button
+        variant="outlined"
+        onClick={() => navigate(-1)}
+        fullWidth
+        sx={{ mb: 4 }}
+      >
+        ← VOLVER
       </Button>
 
-      <Typography variant="h5">{ticket.titulo}</Typography>
-      <Typography variant="body1" sx={{ mb: 1 }}>{ticket.descripcion}</Typography>
-
-      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-        Creado por: {ticket.usuario_username} / {ticket.usuario_nombre} {ticket.usuario_apellido} / {ticket.usuario_email}
+      <Typography variant="h5" sx={{ mb: 2, textAlign: 'center' }}>
+        {ticket.titulo}
       </Typography>
-      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-        Fecha de creación: {new Date(ticket.creado_en).toLocaleString("es-CL")}
+      <Typography sx={{ mb: 3, textAlign: 'center' }}>{ticket.descripcion}</Typography>
+
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'center' }}>
+        <strong>Creado por:</strong> {ticket.usuario_username} / {ticket.usuario_nombre}{' '}
+        {ticket.usuario_apellido} / {ticket.usuario_email}
+        <br />
+        <strong>Fecha de creación:</strong>{' '}
+        {new Date(ticket.creado_en).toLocaleString('es-CL')}
       </Typography>
 
-      <FormControl fullWidth margin="normal">
-        <InputLabel id="estado-label">Estado</InputLabel>
+      <Box sx={{ mb: 4 }}>
+        <Typography sx={{ mb: 1 }}><strong>Estado</strong></Typography>
         <Select
-          labelId="estado-label"
+          fullWidth
           value={estado}
           onChange={(e) => setEstado(e.target.value)}
-          label="Estado"
-          disabled={!puedeCambiarEstado}
+          disabled={usuario.tipo === 'estudiante'}
         >
-          <MenuItem value="abierto">Abierto</MenuItem>
-          <MenuItem value="en_revision">En Revisión</MenuItem>
-          <MenuItem value="resuelto">Resuelto</MenuItem>
+          <MenuItem value="Abierto">Abierto</MenuItem>
+          <MenuItem value="En Revisión">En Revisión</MenuItem>
+          <MenuItem value="Resuelto">Resuelto</MenuItem>
         </Select>
-      </FormControl>
 
-      {puedeCambiarEstado && (
-        <Button onClick={() => setAbrirConfirmacion(true)} variant="contained" sx={{ mb: 3 }}>
-          Actualizar Estado
-        </Button>
-      )}
-
-      <Typography variant="h6" gutterBottom>Conversación</Typography>
-
-      {comentarios.length === 0 ? (
-        <Typography color="text.secondary">Aún no hay comentarios.</Typography>
-      ) : (
-        comentarios.map((c) => (
-          <Card key={c.id} sx={{ mb: 1 }}>
-            <CardContent>
-              <Typography variant="body2">{c.contenido}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {c.usuario_username} — {new Date(c.creado_en).toLocaleString("es-CL")}
-              </Typography>
-            </CardContent>
-          </Card>
-        ))
-      )}
-
-      <Box mt={2} display="flex" gap={1}>
-        <TextField
-          label="Nuevo comentario"
+        <Typography sx={{ mt: 3, mb: 1 }}><strong>Prioridad</strong></Typography>
+        <Select
           fullWidth
-          value={nuevoComentario}
-          onChange={(e) => setNuevoComentario(e.target.value)}
-        />
-        <Button variant="contained" onClick={manejarComentario}>
-          Enviar
-        </Button>
+          value={prioridad}
+          onChange={(e) => setPrioridad(e.target.value)}
+          disabled={usuario.tipo === 'estudiante'}
+        >
+          <MenuItem value="Alta">Alta</MenuItem>
+          <MenuItem value="Media">Media</MenuItem>
+          <MenuItem value="Baja">Baja</MenuItem>
+        </Select>
+
+        {usuario.tipo !== 'estudiante' && (
+          <Button
+            variant="contained"
+            fullWidth
+            sx={{ mt: 3 }}
+            onClick={() => setOpenConfirm(true)}
+          >
+            ACTUALIZAR ESTADO
+          </Button>
+        )}
       </Box>
 
-      <Dialog open={abrirConfirmacion} onClose={() => setAbrirConfirmacion(false)}>
+      <Typography variant="h6" sx={{ mb: 1 }}>Conversación</Typography>
+      <Paper
+        variant="outlined"
+        sx={{ height: '30vh', overflowY: 'auto', p: 2, mb: 2 }}
+      >
+        {comentarios.length === 0 ? (
+          <Typography>Aún no hay comentarios.</Typography>
+        ) : (
+          comentarios.map((comentario) => (
+            <Box
+              key={comentario.id}
+              sx={{ mb: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}
+            >
+              <Typography>{comentario.contenido}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {comentario.usuario_username} —{' '}
+                {new Date(comentario.creado_en).toLocaleString('es-CL')}
+              </Typography>
+            </Box>
+          ))
+        )}
+      </Paper>
+
+      <TextField
+        label="Nuevo comentario"
+        fullWidth
+        multiline
+        rows={3}
+        disabled={bloqueado}
+        value={nuevoComentario}
+        onChange={(e) => setNuevoComentario(e.target.value)}
+        sx={{ mb: 2 }}
+      />
+      <Button
+        variant="contained"
+        fullWidth
+        onClick={handleEnviarComentario}
+        disabled={bloqueado}
+        sx={{ mb: 4 }}
+      >
+        ENVIAR
+      </Button>
+
+      <Dialog open={openConfirm} onClose={() => setOpenConfirm(false)}>
         <DialogTitle>Confirmar cambio</DialogTitle>
         <DialogContent>
-          <DialogContentText>¿Seguro que deseas actualizar el estado del ticket?</DialogContentText>
+          <DialogContentText>
+            ¿Seguro que deseas actualizar el estado del ticket?
+          </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setAbrirConfirmacion(false)}>Cancelar</Button>
-          <Button onClick={confirmarCambioEstado} autoFocus>Confirmar</Button>
+          <Button onClick={() => setOpenConfirm(false)}>CANCELAR</Button>
+          <Button onClick={handleActualizarEstado} autoFocus>
+            CONFIRMAR
+          </Button>
         </DialogActions>
       </Dialog>
 
       <Snackbar
-        open={mostrarAlerta}
-        autoHideDuration={3000}
-        onClose={() => setMostrarAlerta(false)}
+        open={alerta}
+        autoHideDuration={3500}
+        onClose={() => setAlerta(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" sx={{ width: "100%" }}>
-          Estado actualizado correctamente
+        <Alert severity="success" sx={{ width: '100%' }}>
+          {mensaje}
         </Alert>
       </Snackbar>
-    </Box>
+    </Container>
   );
 }
