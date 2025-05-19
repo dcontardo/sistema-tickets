@@ -1,3 +1,5 @@
+# backend/api/serializers.py
+
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Ticket, Comentario, Area, Escuela, Carrera
@@ -82,6 +84,9 @@ class ComentarioSerializer(serializers.ModelSerializer):
 # -------------------- TICKETS --------------------
 class TicketSerializer(serializers.ModelSerializer):
     usuario_username = serializers.ReadOnlyField(source='usuario.username')
+    usuario_nombre = serializers.ReadOnlyField(source='usuario.first_name')
+    usuario_apellido = serializers.ReadOnlyField(source='usuario.last_name')
+    usuario_email = serializers.ReadOnlyField(source='usuario.email')
     area_nombre = serializers.CharField(source='usuario.area.nombre', read_only=True)
     escuela_nombre = serializers.CharField(source='usuario.escuela.nombre', read_only=True)
     carrera_nombre = serializers.CharField(source='usuario.carrera.nombre', read_only=True)
@@ -89,8 +94,18 @@ class TicketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ticket
         fields = [
-            'id', 'titulo', 'descripcion', 'estado', 'prioridad',
-            'usuario', 'usuario_username',
-            'area_nombre', 'escuela_nombre', 'carrera_nombre',
+            'id',
+            'titulo',
+            'descripcion',
+            'estado',
+            'prioridad',
+            'usuario',
+            'usuario_username',
+            'usuario_nombre',
+            'usuario_apellido',
+            'usuario_email',
+            'area_nombre',
+            'escuela_nombre',
+            'carrera_nombre',
             'creado_en',
         ]

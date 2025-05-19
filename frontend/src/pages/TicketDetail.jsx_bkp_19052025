@@ -1,13 +1,14 @@
-// frontend/src/pages/TicketDetail.jsx
-
+// src/pages/TicketDetail.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Box,
   Button,
-  Typography,
+  Card,
+  CardContent,
   TextField,
+  Typography,
   Select,
   MenuItem,
   InputLabel,
@@ -19,18 +20,16 @@ import {
   DialogTitle,
   Snackbar,
   Alert,
-  Card,
-  CardContent,
 } from "@mui/material";
 import { useAuth } from "../context/AuthContext";
 
 const API_BASE = "http://192.168.200.46:8000/api";
 
-export default function TicketDetail() {
+const TicketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { usuario } = useAuth();
-
+  
   const [ticket, setTicket] = useState(null);
   const [comentarios, setComentarios] = useState([]);
   const [nuevoComentario, setNuevoComentario] = useState("");
@@ -41,14 +40,14 @@ export default function TicketDetail() {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    // Cargar ticket
+    // Cargar ticket y validar acceso
     axios
       .get(`${API_BASE}/tickets/${id}/`, {
         headers: { Authorization: `Token ${token}` },
       })
       .then((res) => {
         const t = res.data;
-        // Perfilamiento
+        // Perfilamiento: estudiantes solo suyos; funcionarios por área; admins todo
         if (
           usuario.tipo === "estudiante" &&
           t.usuario !== usuario.id
@@ -57,7 +56,7 @@ export default function TicketDetail() {
         }
         if (
           usuario.tipo === "funcionario" &&
-          t.area_nombre !== usuario.area_nombre
+          t.area !== usuario.area
         ) {
           return navigate("/tickets");
         }
@@ -72,7 +71,7 @@ export default function TicketDetail() {
         headers: { Authorization: `Token ${token}` },
       })
       .then((res) => setComentarios(res.data))
-      .catch((err) => console.error(err));
+      .catch((err) => console.error("Error cargando comentarios:", err));
   }, [id, usuario, navigate, token]);
 
   const manejarComentario = () => {
@@ -87,7 +86,7 @@ export default function TicketDetail() {
         setComentarios((prev) => [...prev, res.data]);
         setNuevoComentario("");
       })
-      .catch((err) => console.error(err));
+      .catch((err) => console.error("Error enviando comentario:", err));
   };
 
   const confirmarCambioEstado = () => {
@@ -102,14 +101,15 @@ export default function TicketDetail() {
         setMostrarAlerta(true);
         setAbrirConfirmacion(false);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => console.error("Error actualizando estado:", err));
   };
 
   if (!ticket) {
-    return <Typography sx={{ p: 2 }}>Cargando ticket…</Typography>;
+    return <div style={{ padding: "1rem" }}>Cargando ticket…</div>;
   }
 
-  const puedeResponder =
+  // Determinar si puede cambiar estado
+  const puedeCambiarEstado =
     usuario.tipo === "funcionario" || usuario.tipo === "admin";
 
   return (
@@ -118,18 +118,11 @@ export default function TicketDetail() {
         ← Volver
       </Button>
 
-      <Typography variant="h5">{ticket.titulo}</Typography>
-      <Typography variant="body1" sx={{ mb: 1 }}>
-        {ticket.descripcion}
+      <Typography variant="h5" gutterBottom>
+        {ticket.titulo}
       </Typography>
-
-      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
-        <strong>Creado por:</strong> {ticket.usuario_username} / {ticket.usuario_nombre} {ticket.usuario_apellido} / {ticket.usuario_email} <br />
-        <strong>Fecha de creación:</strong>{" "}
-        {new Date(ticket.creado_en).toLocaleString("es-CL", {
-          dateStyle: "short",
-          timeStyle: "short",
-        })}
+      <Typography variant="body1" gutterBottom>
+        {ticket.descripcion}
       </Typography>
 
       <FormControl fullWidth margin="normal">
@@ -139,62 +132,60 @@ export default function TicketDetail() {
           value={estado}
           onChange={(e) => setEstado(e.target.value)}
           label="Estado"
-          disabled={!puedeResponder}
+          disabled={!puedeCambiarEstado}
         >
-          <MenuItem value="abierto">Abierto</MenuItem>
-          <MenuItem value="en_revision">En Revisión</MenuItem>
-          <MenuItem value="resuelto">Resuelto</MenuItem>
+          <MenuItem value="Abierto">Abierto</MenuItem>
+          <MenuItem value="En Revisión">En Revisión</MenuItem>
+          <MenuItem value="Resuelto">Resuelto</MenuItem>
         </Select>
       </FormControl>
 
-      {puedeResponder && (
+      {puedeCambiarEstado && (
         <Button
           onClick={() => setAbrirConfirmacion(true)}
           variant="contained"
-          sx={{ mb: 3 }}
+          sx={{ mt: 1 }}
         >
           Actualizar Estado
         </Button>
       )}
 
-      <Typography variant="h6" gutterBottom>
+      <Typography variant="h6" mt={3}>
         Conversación
       </Typography>
 
       {comentarios.length === 0 ? (
-        <Typography color="text.secondary">Aún no hay comentarios.</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Aún no hay comentarios.
+        </Typography>
       ) : (
         comentarios.map((c) => (
-          <Card key={c.id} sx={{ mb: 1 }}>
+          <Card key={c.id} sx={{ my: 1 }}>
             <CardContent>
               <Typography variant="body2">{c.contenido}</Typography>
               <Typography variant="caption" color="text.secondary">
-                {c.usuario_username} —{" "}
-                {new Date(c.creado_en).toLocaleString("es-CL", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                })}
+                {c.usuario?.username} —{" "}
+                {new Date(c.creado_en).toLocaleString("es-CL")}
               </Typography>
             </CardContent>
           </Card>
         ))
       )}
 
-      {puedeResponder && (
-        <Box mt={2} display="flex" gap={1}>
-          <TextField
-            label="Nuevo comentario"
-            fullWidth
-            value={nuevoComentario}
-            onChange={(e) => setNuevoComentario(e.target.value)}
-          />
-          <Button variant="contained" onClick={manejarComentario}>
-            Enviar
-          </Button>
-        </Box>
-      )}
+      {/* Nueva caja de comentario */}
+      <Box mt={2} display="flex" gap={1}>
+        <TextField
+          label="Nuevo comentario"
+          fullWidth
+          value={nuevoComentario}
+          onChange={(e) => setNuevoComentario(e.target.value)}
+        />
+        <Button variant="contained" onClick={manejarComentario}>
+          Enviar
+        </Button>
+      </Box>
 
-      {/* Diálogo de confirmación */}
+      {/* Confirmación de estado */}
       <Dialog
         open={abrirConfirmacion}
         onClose={() => setAbrirConfirmacion(false)}
@@ -202,7 +193,7 @@ export default function TicketDetail() {
         <DialogTitle>Confirmar cambio</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            ¿Seguro que deseas actualizar el estado del ticket?
+            ¿Seguro de actualizar el estado del ticket?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -215,7 +206,7 @@ export default function TicketDetail() {
         </DialogActions>
       </Dialog>
 
-      {/* Alerta de éxito */}
+      {/* Alerta éxito */}
       <Snackbar
         open={mostrarAlerta}
         autoHideDuration={3000}
@@ -227,4 +218,6 @@ export default function TicketDetail() {
       </Snackbar>
     </Box>
   );
-}
+};
+
+export default TicketDetail;

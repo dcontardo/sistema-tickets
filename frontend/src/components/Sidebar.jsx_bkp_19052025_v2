@@ -1,0 +1,94 @@
+// src/components/Sidebar.jsx
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Drawer,
+  Box,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
+  Typography
+} from '@mui/material';
+import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
+import BarChartIcon from '@mui/icons-material/BarChart';
+import SettingsIcon from '@mui/icons-material/Settings';
+import LogoutIcon from '@mui/icons-material/Logout';
+import { useAuth } from '../context/AuthContext';
+
+const Sidebar = () => {
+  const { usuario, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
+
+  return (
+    <Drawer variant="permanent" anchor="left">
+      <Box
+        sx={{
+          width: 240,
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%'
+        }}
+      >
+        {/* Cabecera con título y saludo */}
+        <Box sx={{ p: 2, textAlign: 'center' }}>
+          <Typography variant="h6">
+            Sistema de Tickets
+          </Typography>
+          <Typography variant="subtitle2" sx={{ mt: 1 }}>
+            Bienvenid{usuario?.first_name ? 'o' : '@'},<br/>
+            {usuario?.first_name || usuario?.username}
+          </Typography>
+        </Box>
+
+        <Divider />
+
+        {/* Menú principal */}
+        <List>
+          <ListItem button component={Link} to="/tickets">
+            <ListItemIcon>
+              <ConfirmationNumberIcon />
+            </ListItemIcon>
+            <ListItemText primary="Tickets" />
+          </ListItem>
+
+          <ListItem button component={Link} to="/metricas">
+            <ListItemIcon>
+              <BarChartIcon />
+            </ListItemIcon>
+            <ListItemText primary="Métricas" />
+          </ListItem>
+
+          <ListItem button component={Link} to="/configuracion">
+            <ListItemIcon>
+              <SettingsIcon />
+            </ListItemIcon>
+            <ListItemText primary="Configuración" />
+          </ListItem>
+        </List>
+
+        {/* Empuja el logout al fondo */}
+        <Box sx={{ flexGrow: 1 }} />
+
+        <Divider />
+
+        {/* Cerrar sesión */}
+        <List>
+          <ListItem button onClick={handleLogout}>
+            <ListItemIcon>
+              <LogoutIcon />
+            </ListItemIcon>
+            <ListItemText primary="Cerrar Sesión" />
+          </ListItem>
+        </List>
+      </Box>
+    </Drawer>
+  );
+};
+
+export default Sidebar;

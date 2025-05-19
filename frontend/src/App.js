@@ -25,6 +25,8 @@ import TicketDetail from "./pages/TicketDetail";
 import Login from "./pages/Login";
 import LogoutButton from "./components/LogoutButton";
 import { useAuth } from "./context/AuthContext";
+import CrearTicket from "./pages/CrearTicket";
+
 
 const App = () => {
   const { usuario } = useAuth();
@@ -183,6 +185,7 @@ const App = () => {
                 path="/"
                 element={<Navigate to="/tickets" replace />}
               />
+       	      <Route path="/tickets/nuevo" element={<CrearTicket />} />
               <Route path="/tickets" element={<Tickets />} />
               <Route path="/tickets/:id" element={<TicketDetail />} />
 

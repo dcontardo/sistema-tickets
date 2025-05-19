@@ -1,3 +1,4 @@
+// src/pages/Tickets.jsx
 import React, { useEffect, useState } from "react";
 import {
   Container,
@@ -5,17 +6,22 @@ import {
   TextField,
   MenuItem,
   Box,
-  Button,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
-import { getTickets } from "../api";
+import { getTickets, updateTicket } from "../api";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const estados = [
-  { value: "abierto", label: "Abierto" },
-  { value: "en_revision", label: "En Revisión" },
-  { value: "resuelto", label: "Resuelto" },
+  { value: "Abierto", label: "Abierto" },
+  { value: "En Revisión", label: "En Revisión" },
+  { value: "Resuelto", label: "Resuelto" },
+];
+
+const prioridades = [
+  { value: "Alta", label: "Alta" },
+  { value: "Media", label: "Media" },
+  { value: "Baja", label: "Baja" },
 ];
 
 const localeText = {
@@ -41,10 +47,11 @@ const localeText = {
   },
 };
 
-export default function Tickets() {
+const Tickets = () => {
   const [tickets, setTickets] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
+  const [filtroPrioridad, setFiltroPrioridad] = useState("todos");
   const navigate = useNavigate();
   const { usuario } = useAuth();
 
@@ -54,14 +61,30 @@ export default function Tickets() {
 
   const fetchTickets = async () => {
     const data = await getTickets();
-    setTickets(data);
+    setTickets(data); // Ya vienen filtrados por el backend
   };
 
-  const columnasEstudiante = [
+  const handleCellEditCommit = async (params) => {
+    const { id, field, value } = params;
+    const updatedTicket = tickets.find((ticket) => ticket.id === id);
+    if (updatedTicket) {
+      const cambios = { ...updatedTicket, [field]: value };
+      await updateTicket(
+        id,
+        cambios.titulo,
+        cambios.descripcion,
+        cambios.estado,
+        cambios.prioridad
+      );
+      fetchTickets();
+    }
+  };
+
+  const columnas = [
     {
       field: "id",
       headerName: "ID",
-      width: 80,
+      width: 70,
       renderCell: (params) => (
         <strong
           style={{ cursor: "pointer", color: "#1976d2" }}
@@ -71,12 +94,39 @@ export default function Tickets() {
         </strong>
       ),
     },
-    { field: "titulo", headerName: "Título", flex: 1, minWidth: 200 },
-    { field: "descripcion", headerName: "Descripción", flex: 2, minWidth: 300 },
+    {
+      field: "titulo",
+      headerName: "Título",
+      flex: 1,
+      editable: false,
+    },
+    {
+      field: "descripcion",
+      headerName: "Descripción",
+      flex: 2,
+      editable: false,
+    },
+      usuario?.tipo !== "estudiante" && {
+      field: "usuario",
+      headerName: "Usuario",
+      width: 150,
+      valueGetter: (params) => params?.row?.usuario?.username || "—",
+    },
     {
       field: "estado",
       headerName: "Estado",
       width: 150,
+      editable: usuario?.tipo !== "estudiante",
+      type: "singleSelect",
+      valueOptions: estados.map((e) => e.value),
+    },
+    {
+      field: "prioridad",
+      headerName: "Prioridad",
+      width: 150,
+      editable: usuario?.tipo !== "estudiante",
+      type: "singleSelect",
+      valueOptions: prioridades.map((p) => p.value),
     },
     {
       field: "creado_en",
@@ -94,32 +144,12 @@ export default function Tickets() {
         });
       },
     },
-  ];
-
-  const columnasFuncionarioAdmin = [
-    ...columnasEstudiante,
-    {
-      field: "usuario_username",
-      headerName: "Usuario",
-      width: 150,
-    },
-    {
-      field: "prioridad",
-      headerName: "Prioridad",
-      width: 150,
-      editable: true,
-      type: "singleSelect",
-      valueOptions: ["alta", "media", "baja"],
-    },
-  ];
-
-  const columnas = usuario?.tipo === "estudiante"
-    ? columnasEstudiante
-    : columnasFuncionarioAdmin;
+  ].filter(Boolean); // Elimina columnas nulas
 
   const ticketsFiltrados = tickets.filter((ticket) => {
     return (
       (filtroEstado === "todos" || ticket.estado === filtroEstado) &&
+      (filtroPrioridad === "todos" || ticket.prioridad === filtroPrioridad) &&
       (ticket.titulo.toLowerCase().includes(busqueda.toLowerCase()) ||
         ticket.descripcion?.toLowerCase().includes(busqueda.toLowerCase()) ||
         ticket.id.toString().includes(busqueda))
@@ -128,16 +158,9 @@ export default function Tickets() {
 
   return (
     <Container maxWidth="lg">
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 3 }}>
-        <Typography variant="h5" gutterBottom>
-          Lista de Tickets
-        </Typography>
-        {usuario?.tipo === "estudiante" && (
-          <Button variant="contained" onClick={() => navigate("/tickets/nuevo")}>
-            Nuevo Ticket
-          </Button>
-        )}
-      </Box>
+      <Typography variant="h5" gutterBottom sx={{ mt: 3 }}>
+        Lista de Tickets
+      </Typography>
 
       <Box sx={{ display: "flex", gap: 2, my: 2 }}>
         <TextField
@@ -155,24 +178,52 @@ export default function Tickets() {
           sx={{ minWidth: 150 }}
         >
           <MenuItem value="todos">Todos</MenuItem>
-          {estados.map((e) => (
-            <MenuItem key={e.value} value={e.value}>
-              {e.label}
+          {estados.map((estado) => (
+            <MenuItem key={estado.value} value={estado.value}>
+              {estado.label}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          select
+          label="Prioridad"
+          value={filtroPrioridad}
+          onChange={(e) => setFiltroPrioridad(e.target.value)}
+          sx={{ minWidth: 150 }}
+        >
+          <MenuItem value="todos">Todas</MenuItem>
+          {prioridades.map((p) => (
+            <MenuItem key={p.value} value={p.value}>
+              {p.label}
             </MenuItem>
           ))}
         </TextField>
       </Box>
 
-      <Box sx={{ height: 600 }}>
+      <Box sx={{ height: 500 }}>
         <DataGrid
           rows={ticketsFiltrados}
           columns={columnas}
           pageSize={100}
-          rowsPerPageOptions={[20, 50, 100]}
+          rowsPerPageOptions={[100]}
           disableSelectionOnClick
+          onCellEditCommit={handleCellEditCommit}
           localeText={localeText}
+          getRowClassName={(params) =>
+            params.row.prioridad === "Alta" && params.row.estado !== "Resuelto"
+              ? "fila-prioridad-alta"
+              : ""
+          }
+          sx={{
+            "& .fila-prioridad-alta": {
+              borderLeft: "6px solid red",
+              backgroundColor: "#fff5f5",
+            },
+          }}
         />
       </Box>
     </Container>
   );
-}
+};
+
+export default Tickets;

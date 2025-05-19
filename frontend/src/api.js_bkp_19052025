@@ -27,16 +27,6 @@ export const updateTicket = async (id, titulo, descripcion, estado, prioridad) =
   return await res.json();
 };
 
-export const createTicket = async (titulo, descripcion) => {
-  const res = await fetch(`${API_BASE}/tickets/`, {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ titulo, descripcion }),
-  });
-  if (!res.ok) throw new Error("Error al crear ticket");
-  return await res.json();
-};
-
 export const getEstado = async () => {
   const res = await fetch(`${API_BASE}/metricas/tickets-por-estado/`, {
     headers: getAuthHeaders(),
