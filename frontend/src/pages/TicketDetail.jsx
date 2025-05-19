@@ -1,14 +1,11 @@
-// src/pages/TicketDetail.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Box,
   Button,
-  Card,
-  CardContent,
-  TextField,
   Typography,
+  TextField,
   Select,
   MenuItem,
   InputLabel,
@@ -20,16 +17,18 @@ import {
   DialogTitle,
   Snackbar,
   Alert,
+  Card,
+  CardContent,
 } from "@mui/material";
 import { useAuth } from "../context/AuthContext";
 
 const API_BASE = "http://192.168.200.46:8000/api";
 
-const TicketDetail = () => {
+export default function TicketDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { usuario } = useAuth();
-  
+
   const [ticket, setTicket] = useState(null);
   const [comentarios, setComentarios] = useState([]);
   const [nuevoComentario, setNuevoComentario] = useState("");
@@ -40,14 +39,14 @@ const TicketDetail = () => {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    // Cargar ticket y validar acceso
+    // Cargar ticket
     axios
       .get(`${API_BASE}/tickets/${id}/`, {
         headers: { Authorization: `Token ${token}` },
       })
       .then((res) => {
         const t = res.data;
-        // Perfilamiento: estudiantes solo suyos; funcionarios por área; admins todo
+        // Perfilamiento
         if (
           usuario.tipo === "estudiante" &&
           t.usuario !== usuario.id
@@ -56,7 +55,7 @@ const TicketDetail = () => {
         }
         if (
           usuario.tipo === "funcionario" &&
-          t.area !== usuario.area
+          t.area_nombre !== usuario.area_nombre
         ) {
           return navigate("/tickets");
         }
@@ -71,7 +70,7 @@ const TicketDetail = () => {
         headers: { Authorization: `Token ${token}` },
       })
       .then((res) => setComentarios(res.data))
-      .catch((err) => console.error("Error cargando comentarios:", err));
+      .catch((err) => console.error(err));
   }, [id, usuario, navigate, token]);
 
   const manejarComentario = () => {
@@ -86,7 +85,7 @@ const TicketDetail = () => {
         setComentarios((prev) => [...prev, res.data]);
         setNuevoComentario("");
       })
-      .catch((err) => console.error("Error enviando comentario:", err));
+      .catch((err) => console.error(err));
   };
 
   const confirmarCambioEstado = () => {
@@ -101,14 +100,13 @@ const TicketDetail = () => {
         setMostrarAlerta(true);
         setAbrirConfirmacion(false);
       })
-      .catch((err) => console.error("Error actualizando estado:", err));
+      .catch((err) => console.error(err));
   };
 
   if (!ticket) {
-    return <div style={{ padding: "1rem" }}>Cargando ticket…</div>;
+    return <Typography sx={{ p: 2 }}>Cargando ticket…</Typography>;
   }
 
-  // Determinar si puede cambiar estado
   const puedeCambiarEstado =
     usuario.tipo === "funcionario" || usuario.tipo === "admin";
 
@@ -118,11 +116,13 @@ const TicketDetail = () => {
         ← Volver
       </Button>
 
-      <Typography variant="h5" gutterBottom>
-        {ticket.titulo}
-      </Typography>
-      <Typography variant="body1" gutterBottom>
+      <Typography variant="h5">{ticket.titulo}</Typography>
+      <Typography variant="body1" sx={{ mb: 1 }}>
         {ticket.descripcion}
+      </Typography>
+
+      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+        Solicitado por: {ticket.usuario_username}
       </Typography>
 
       <FormControl fullWidth margin="normal">
@@ -134,9 +134,9 @@ const TicketDetail = () => {
           label="Estado"
           disabled={!puedeCambiarEstado}
         >
-          <MenuItem value="Abierto">Abierto</MenuItem>
-          <MenuItem value="En Revisión">En Revisión</MenuItem>
-          <MenuItem value="Resuelto">Resuelto</MenuItem>
+          <MenuItem value="abierto">Abierto</MenuItem>
+          <MenuItem value="en_revision">En Revisión</MenuItem>
+          <MenuItem value="resuelto">Resuelto</MenuItem>
         </Select>
       </FormControl>
 
@@ -144,35 +144,35 @@ const TicketDetail = () => {
         <Button
           onClick={() => setAbrirConfirmacion(true)}
           variant="contained"
-          sx={{ mt: 1 }}
+          sx={{ mb: 3 }}
         >
           Actualizar Estado
         </Button>
       )}
 
-      <Typography variant="h6" mt={3}>
+      <Typography variant="h6" gutterBottom>
         Conversación
       </Typography>
 
       {comentarios.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Aún no hay comentarios.
-        </Typography>
+        <Typography color="text.secondary">Aún no hay comentarios.</Typography>
       ) : (
         comentarios.map((c) => (
-          <Card key={c.id} sx={{ my: 1 }}>
+          <Card key={c.id} sx={{ mb: 1 }}>
             <CardContent>
               <Typography variant="body2">{c.contenido}</Typography>
               <Typography variant="caption" color="text.secondary">
-                {c.usuario?.username} —{" "}
-                {new Date(c.creado_en).toLocaleString("es-CL")}
+                {c.usuario_username} —{" "}
+                {new Date(c.creado_en).toLocaleString("es-CL", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                })}
               </Typography>
             </CardContent>
           </Card>
         ))
       )}
 
-      {/* Nueva caja de comentario */}
       <Box mt={2} display="flex" gap={1}>
         <TextField
           label="Nuevo comentario"
@@ -185,7 +185,7 @@ const TicketDetail = () => {
         </Button>
       </Box>
 
-      {/* Confirmación de estado */}
+      {/* Diálogo de confirmación */}
       <Dialog
         open={abrirConfirmacion}
         onClose={() => setAbrirConfirmacion(false)}
@@ -193,7 +193,7 @@ const TicketDetail = () => {
         <DialogTitle>Confirmar cambio</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            ¿Seguro de actualizar el estado del ticket?
+            ¿Seguro que deseas actualizar el estado del ticket?
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -206,7 +206,7 @@ const TicketDetail = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Alerta éxito */}
+      {/* Alerta de éxito */}
       <Snackbar
         open={mostrarAlerta}
         autoHideDuration={3000}
@@ -218,6 +218,4 @@ const TicketDetail = () => {
       </Snackbar>
     </Box>
   );
-};
-
-export default TicketDetail;
+}

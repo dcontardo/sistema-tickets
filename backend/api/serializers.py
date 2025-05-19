@@ -1,10 +1,10 @@
-# backend/api/serializers.py
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Ticket, Comentario, Area, Escuela, Carrera
 
 User = get_user_model()
 
+# -------------------- REGISTRO --------------------
 class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -28,3 +28,69 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         return user
+
+# -------------------- LOGIN --------------------
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
+
+# -------------------- USUARIO --------------------
+class UserSerializer(serializers.ModelSerializer):
+    nombre_completo = serializers.SerializerMethodField()
+    area_nombre = serializers.CharField(source='area.nombre', read_only=True)
+    escuela_nombre = serializers.CharField(source='escuela.nombre', read_only=True)
+    carrera_nombre = serializers.CharField(source='carrera.nombre', read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'id', 'username', 'email', 'tipo',
+            'first_name', 'last_name', 'nombre_completo',
+            'area', 'escuela', 'carrera',
+            'area_nombre', 'escuela_nombre', 'carrera_nombre',
+        ]
+
+    def get_nombre_completo(self, obj):
+        if obj.first_name or obj.last_name:
+            return f"{obj.first_name} {obj.last_name}".strip()
+        return "—"
+
+# -------------------- ÁREAS, ESCUELAS, CARRERAS --------------------
+class AreaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Area
+        fields = ['id', 'nombre']
+
+class EscuelaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Escuela
+        fields = ['id', 'nombre']
+
+class CarreraSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Carrera
+        fields = ['id', 'nombre', 'escuela']
+
+# -------------------- COMENTARIOS --------------------
+class ComentarioSerializer(serializers.ModelSerializer):
+    usuario_username = serializers.ReadOnlyField(source='usuario.username')
+
+    class Meta:
+        model = Comentario
+        fields = ['id', 'ticket', 'usuario', 'usuario_username', 'contenido', 'creado_en']
+
+# -------------------- TICKETS --------------------
+class TicketSerializer(serializers.ModelSerializer):
+    usuario_username = serializers.ReadOnlyField(source='usuario.username')
+    area_nombre = serializers.CharField(source='usuario.area.nombre', read_only=True)
+    escuela_nombre = serializers.CharField(source='usuario.escuela.nombre', read_only=True)
+    carrera_nombre = serializers.CharField(source='usuario.carrera.nombre', read_only=True)
+
+    class Meta:
+        model = Ticket
+        fields = [
+            'id', 'titulo', 'descripcion', 'estado', 'prioridad',
+            'usuario', 'usuario_username',
+            'area_nombre', 'escuela_nombre', 'carrera_nombre',
+            'creado_en',
+        ]

@@ -1,4 +1,3 @@
-// src/pages/Tickets.jsx
 import React, { useEffect, useState } from "react";
 import {
   Container,
@@ -13,15 +12,15 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const estados = [
-  { value: "Abierto", label: "Abierto" },
-  { value: "En Revisión", label: "En Revisión" },
-  { value: "Resuelto", label: "Resuelto" },
+  { value: "abierto", label: "Abierto" },
+  { value: "en_revision", label: "En Revisión" },
+  { value: "resuelto", label: "Resuelto" },
 ];
 
 const prioridades = [
-  { value: "Alta", label: "Alta" },
-  { value: "Media", label: "Media" },
-  { value: "Baja", label: "Baja" },
+  { value: "alta", label: "Alta" },
+  { value: "media", label: "Media" },
+  { value: "baja", label: "Baja" },
 ];
 
 const localeText = {
@@ -47,7 +46,7 @@ const localeText = {
   },
 };
 
-const Tickets = () => {
+export default function Tickets() {
   const [tickets, setTickets] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
@@ -61,30 +60,30 @@ const Tickets = () => {
 
   const fetchTickets = async () => {
     const data = await getTickets();
-    setTickets(data); // Ya vienen filtrados por el backend
+    setTickets(data);
   };
 
   const handleCellEditCommit = async (params) => {
     const { id, field, value } = params;
-    const updatedTicket = tickets.find((ticket) => ticket.id === id);
-    if (updatedTicket) {
-      const cambios = { ...updatedTicket, [field]: value };
-      await updateTicket(
-        id,
-        cambios.titulo,
-        cambios.descripcion,
-        cambios.estado,
-        cambios.prioridad
-      );
-      fetchTickets();
-    }
+    const ticketOriginal = tickets.find((t) => t.id === id);
+    if (!ticketOriginal) return;
+
+    const payload = {
+      titulo: ticketOriginal.titulo,
+      descripcion: ticketOriginal.descripcion,
+      estado: field === "estado" ? value : ticketOriginal.estado,
+      prioridad: field === "prioridad" ? value : ticketOriginal.prioridad,
+    };
+
+    await updateTicket(id, payload.titulo, payload.descripcion, payload.estado, payload.prioridad);
+    fetchTickets();
   };
 
   const columnas = [
     {
       field: "id",
       headerName: "ID",
-      width: 70,
+      width: 80,
       renderCell: (params) => (
         <strong
           style={{ cursor: "pointer", color: "#1976d2" }}
@@ -94,23 +93,12 @@ const Tickets = () => {
         </strong>
       ),
     },
-    {
-      field: "titulo",
-      headerName: "Título",
-      flex: 1,
-      editable: false,
-    },
-    {
-      field: "descripcion",
-      headerName: "Descripción",
-      flex: 2,
-      editable: false,
-    },
-      usuario?.tipo !== "estudiante" && {
-      field: "usuario",
+    { field: "titulo", headerName: "Título", flex: 1, minWidth: 200 },
+    { field: "descripcion", headerName: "Descripción", flex: 2, minWidth: 300 },
+    usuario?.tipo !== "estudiante" && {
+      field: "usuario_username",
       headerName: "Usuario",
       width: 150,
-      valueGetter: (params) => params?.row?.usuario?.username || "—",
     },
     {
       field: "estado",
@@ -144,7 +132,7 @@ const Tickets = () => {
         });
       },
     },
-  ].filter(Boolean); // Elimina columnas nulas
+  ].filter(Boolean);
 
   const ticketsFiltrados = tickets.filter((ticket) => {
     return (
@@ -178,9 +166,9 @@ const Tickets = () => {
           sx={{ minWidth: 150 }}
         >
           <MenuItem value="todos">Todos</MenuItem>
-          {estados.map((estado) => (
-            <MenuItem key={estado.value} value={estado.value}>
-              {estado.label}
+          {estados.map((e) => (
+            <MenuItem key={e.value} value={e.value}>
+              {e.label}
             </MenuItem>
           ))}
         </TextField>
@@ -200,17 +188,17 @@ const Tickets = () => {
         </TextField>
       </Box>
 
-      <Box sx={{ height: 500 }}>
+      <Box sx={{ height: 600 }}>
         <DataGrid
           rows={ticketsFiltrados}
           columns={columnas}
           pageSize={100}
-          rowsPerPageOptions={[100]}
+          rowsPerPageOptions={[20, 50, 100]}
           disableSelectionOnClick
           onCellEditCommit={handleCellEditCommit}
           localeText={localeText}
           getRowClassName={(params) =>
-            params.row.prioridad === "Alta" && params.row.estado !== "Resuelto"
+            params.row.prioridad === "alta" && params.row.estado !== "resuelto"
               ? "fila-prioridad-alta"
               : ""
           }
@@ -224,6 +212,4 @@ const Tickets = () => {
       </Box>
     </Container>
   );
-};
-
-export default Tickets;
+}

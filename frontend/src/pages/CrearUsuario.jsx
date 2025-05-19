@@ -1,4 +1,3 @@
-// frontend/src/pages/CrearUsuario.jsx
 import React, { useState, useEffect } from "react";
 import {
   Container, TextField, Button, Typography, MenuItem,
@@ -97,7 +96,6 @@ const CrearUsuario = () => {
       return;
     }
 
-    // Validación de duplicados por username o email (solo en modo creación)
     if (!modoEdicion) {
       const usernameExistente = usuarios.some(u => u.username === form.username);
       const emailExistente = usuarios.some(u => u.email === form.email);
@@ -176,6 +174,7 @@ const CrearUsuario = () => {
 
   const columnas = [
     { field: "email", headerName: "Email", width: 200 },
+    { field: "username", headerName: "Username", width: 160 },
     { field: "tipo", headerName: "Tipo", width: 130 },
     { field: "area_nombre", headerName: "Área", width: 160 },
     { field: "escuela_nombre", headerName: "Escuela", width: 160 },
