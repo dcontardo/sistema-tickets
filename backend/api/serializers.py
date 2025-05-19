@@ -110,3 +110,4 @@ class TicketSerializer(serializers.ModelSerializer):
             'carrera_nombre',
             'creado_en',
         ]
+        read_only_fields = ['usuario']  # 👈 ESTA ES LA CORRECCIÓN CLAVE

@@ -10,6 +10,7 @@ export default function CrearTicket() {
   const [titulo, setTitulo] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [error, setError] = useState("");
+  const [exito, setExito] = useState("");
   const navigate = useNavigate();
   const { usuario } = useAuth();
 
@@ -22,15 +23,26 @@ export default function CrearTicket() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setExito("");
+
     if (!titulo || !descripcion) {
       setError("Título y descripción son obligatorios.");
       return;
     }
+
     try {
-      await createTicket(titulo, descripcion);
-      navigate("/tickets");
+      const nuevoTicket = await createTicket(titulo, descripcion);
+      setExito(`Ticket #${nuevoTicket.id} creado correctamente.`);
+      setTitulo("");
+      setDescripcion("");
+
+      // Opcional: redirigir luego de 2.5 segundos
+      setTimeout(() => {
+        navigate("/tickets");
+      }, 2500);
+
     } catch (err) {
-      setError(err.message);
+      setError("Error al crear ticket: " + err.message);
     }
   };
 
@@ -39,7 +51,10 @@ export default function CrearTicket() {
       <Typography variant="h5" gutterBottom>
         Nuevo Ticket
       </Typography>
+
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {exito && <Alert severity="success" sx={{ mb: 2 }}>{exito}</Alert>}
+
       <form onSubmit={handleSubmit}>
         <TextField
           label="Título"
