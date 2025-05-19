@@ -80,6 +80,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comentario
         fields = ['id', 'ticket', 'usuario', 'usuario_username', 'contenido', 'creado_en']
+        read_only_fields = ['ticket', 'usuario']
 
 # -------------------- TICKETS --------------------
 class TicketSerializer(serializers.ModelSerializer):

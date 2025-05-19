@@ -34,6 +34,20 @@ class TicketViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(usuario=self.request.user)
 
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        # DEBUG: muestra lo que llega y los errores
+        print("📥 PATCH recibido:", request.data)
+
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        if not serializer.is_valid():
+            print("❌ Errores de validación:", serializer.errors)
+            return Response(serializer.errors, status=400)
+
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
 # -------------------- Comentarios --------------------
 class ComentarioListCreateView(generics.ListCreateAPIView):
     serializer_class = ComentarioSerializer
